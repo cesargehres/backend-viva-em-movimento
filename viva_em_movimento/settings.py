@@ -15,7 +15,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-
+AUTH_USER_MODEL = 'usuarios.Usuario'
 # Application definition
 
 INSTALLED_APPS = [
@@ -25,11 +25,20 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
+    'rest_framework.authtoken',
+    'rest_framework_simplejwt.token_blacklist',
 
     'usuarios',
     'treinos',
     'exercicios',
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.TokenAuthentication',  # ativa autenticação por token
+    )
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
