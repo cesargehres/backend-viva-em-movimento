@@ -216,3 +216,29 @@ def exercicios_usuario_treino(request, treino_id):
         })
 
     return JsonResponse({"result": exercicios_list, "error": None})
+
+
+@api_view(['GET'])
+def exercicios_usuario_treino_view(request, usuario_treino_id):
+    user, error_response = get_user_from_token(request)
+    if error_response:
+        return error_response
+
+    try:
+        usuario_treino = UsuarioTreino.objects.get(id=usuario_treino_id, usuario=user)
+    except UsuarioTreino.DoesNotExist:
+        return JsonResponse({"result": None, "error": "Treino do usuário não encontrado"}, status=404)
+
+    exercicios_list = []
+    for usuario_exercicio in usuario_treino.exercicios.all():
+        exercicios_list.append({
+            "id": str(usuario_exercicio.exercicio.id),
+            "nome_exercicio": usuario_exercicio.exercicio.nome_exercicio,
+            "descricao_exercicio": usuario_exercicio.exercicio.descricao_exercicio,
+            "series": usuario_exercicio.exercicio.series,
+            "repeticoes": usuario_exercicio.exercicio.repeticoes,
+            "video_exercicio": usuario_exercicio.exercicio.video_exercicio,
+            "concluido": usuario_exercicio.concluido
+        })
+
+    return JsonResponse({"result": exercicios_list, "error": None})
