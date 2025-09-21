@@ -1,5 +1,5 @@
 from django.http import HttpResponse
-from .models import Pessoa
+from .models import Treino
 
 def ver_treino(request):
     return HttpResponse('Vendo produto')
