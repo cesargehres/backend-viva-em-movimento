@@ -1,6 +1,7 @@
 import json
 import uuid
 
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from rest_framework.decorators import api_view
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import TokenError
@@ -141,14 +142,17 @@ def treinos_usuario_view(request):
     if error_response:
         return error_response
 
-    # agora você tem o user autenticado
-    usuario_id = str(user.id)
-    try:
-        usuario = Usuario.objects.get(id=usuario_id)
-    except Usuario.DoesNotExist:
-        return JsonResponse({"result": None, "error": "Usuário não encontrado"}, status=404)
+    # Paginação
+    page = int(request.GET.get("page", 1))
+    size = int(request.GET.get("size", 10))
+    start = (page - 1) * size
+    end = start + size
 
-    treinos = UsuarioTreino.objects.filter(usuario=usuario)
+    # Filtra treinos do usuário autenticado
+    treinos = UsuarioTreino.objects.filter(usuario=user).order_by("data")
+    total = treinos.count()
+    treinos_page = treinos[start:end]
+
     treinos_list = [
         {
             "id": str(treino.id),
@@ -157,7 +161,21 @@ def treinos_usuario_view(request):
             "imagem_treino": treino.treino.imagem_treino.url if treino.treino.imagem_treino else None,
             "data": str(treino.data),
             "treinou": treino.treinou
-        } for treino in treinos
+        }
+        for treino in treinos_page
     ]
 
-    return JsonResponse({"result": treinos_list, "error": None})
+    total_pages = (total + size - 1) // size  # total de páginas
+    next_page = page + 1 if page < total_pages else None
+    previous_page = page - 1 if page > 1 else None
+
+    return JsonResponse({
+        "result": {
+            "total_treinos": total,
+            "current_page": page,
+            "next_page": next_page,
+            "previous_page": previous_page,
+            "treinos": treinos_list
+        },
+        "error": None
+    })
