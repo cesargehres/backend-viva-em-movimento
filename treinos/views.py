@@ -1,5 +1,4 @@
 from django.http import HttpResponse
-from .models import Treino
 
 def ver_treino(request):
     return HttpResponse('Vendo produto')

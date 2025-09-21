@@ -57,10 +57,23 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
 
 
 class UsuarioTreino(models.Model):
-    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
-    treino = models.ForeignKey(Treino, on_delete=models.CASCADE)
+    usuario = models.ForeignKey("usuarios.Usuario", on_delete=models.CASCADE)
+    treino = models.ForeignKey("treinos.Treino", on_delete=models.CASCADE)
     data = models.DateField()
     treinou = models.BooleanField(default=False)
+
+
+class UsuarioExercicio(models.Model):
+    usuario_treino = models.ForeignKey("usuarios.UsuarioTreino", on_delete=models.CASCADE, related_name='exercicios')
+    exercicio = models.ForeignKey("exercicios.Exercicio", on_delete=models.CASCADE)
+    concluido = models.BooleanField(default=False)
+    data = models.DateField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('usuario_treino', 'exercicio')
+
+    def __str__(self):
+        return f"{self.usuario_treino.usuario.nome_usuario} - {self.exercicio.nome_exercicio}"
 
 
 class UsuarioHistorico(models.Model):

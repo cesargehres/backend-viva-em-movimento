@@ -1,5 +1,6 @@
 from django.db import models
 
+
 class Exercicio(models.Model):
     nome_exercicio = models.CharField(max_length=150)
     descricao_exercicio = models.TextField()

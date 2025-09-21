@@ -1,15 +1,12 @@
 import json
 import uuid
 
-from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from rest_framework.decorators import api_view
-from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.exceptions import AuthenticationFailed
 
 from utils.get_user_from_token import get_user_from_token
-from .models import Treino, Usuario, UsuarioTreino
+from .models import Treino, Usuario, UsuarioTreino, UsuarioExercicio
 
 from django.http import JsonResponse
 
@@ -179,3 +176,43 @@ def treinos_usuario_view(request):
         },
         "error": None
     })
+
+
+@api_view(['GET'])
+def exercicios_usuario_treino(request, treino_id):
+    user, error_response = get_user_from_token(request)
+    if error_response:
+        return error_response
+
+    try:
+        treino = Treino.objects.get(id=treino_id)
+    except Treino.DoesNotExist:
+        return JsonResponse({"result": None, "error": "Treino não encontrado"}, status=404)
+
+    # Pega todos os exercícios do treino
+    exercicios = treino.exercicios.all()
+
+    # Pega o status de cada exercício para o usuário
+    exercicios_list = []
+    for exercicio in exercicios:
+        try:
+            usuario_exercicio = UsuarioExercicio.objects.get(
+                usuario=user,
+                treino=treino,
+                exercicio=exercicio
+            )
+            concluido = usuario_exercicio.concluido
+        except UsuarioExercicio.DoesNotExist:
+            concluido = False
+
+        exercicios_list.append({
+            "id": str(exercicio.id),
+            "nome_exercicio": exercicio.nome_exercicio,
+            "descricao_exercicio": exercicio.descricao_exercicio,
+            "series": exercicio.series,
+            "repeticoes": exercicio.repeticoes,
+            "video_exercicio": exercicio.video_exercicio,
+            "concluido": concluido
+        })
+
+    return JsonResponse({"result": exercicios_list, "error": None})
