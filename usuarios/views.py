@@ -7,6 +7,7 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.exceptions import AuthenticationFailed
 
+from utils.get_user_from_token import get_user_from_token
 from .models import Treino, Usuario, UsuarioTreino
 
 from django.http import JsonResponse
@@ -136,35 +137,27 @@ def logout_view(request):
 
 @api_view(['GET'])
 def treinos_usuario_view(request):
-    jwt_auth = JWTAuthentication()
+    user, error_response = get_user_from_token(request)
+    if error_response:
+        return error_response
 
-    # Autenticação do usuário via token
+    # agora você tem o user autenticado
+    usuario_id = str(user.id)
     try:
-        user_auth = jwt_auth.authenticate(request)
-        if not user_auth:
-            raise AuthenticationFailed("Token inválido ou expirado")
+        usuario = Usuario.objects.get(id=usuario_id)
+    except Usuario.DoesNotExist:
+        return JsonResponse({"result": None, "error": "Usuário não encontrado"}, status=404)
 
-        user, token = user_auth
+    treinos = UsuarioTreino.objects.filter(usuario=usuario)
+    treinos_list = [
+        {
+            "id": str(treino.id),
+            "nome_treino": treino.treino.nome_treino,
+            "descricao_treino": treino.treino.descricao_treino,
+            "imagem_treino": treino.treino.imagem_treino.url if treino.treino.imagem_treino else None,
+            "data": str(treino.data),
+            "treinou": treino.treinou
+        } for treino in treinos
+    ]
 
-    except AuthenticationFailed as e:
-        return JsonResponse({"result": None, "error": str(e)}, status=401)
-    except Exception:
-        return JsonResponse({"result": None, "error": "Erro ao verificar token"}, status=400)
-
-    # Busca treinos do usuário autenticado
-    try:
-        treinos = UsuarioTreino.objects.filter(usuario=user).select_related('treino')
-        treinos_list = [
-            {
-                "id": str(treino.id),
-                "nome_treino": treino.treino.nome_treino,
-                "descricao_treino": treino.treino.descricao_treino,
-                "imagem_treino": treino.treino.imagem_treino.url if treino.treino.imagem_treino else None,
-                "data": str(treino.data),
-                "treinou": treino.treinou
-            }
-            for treino in treinos
-        ]
-        return JsonResponse({"result": treinos_list, "error": None}, status=200)
-    except Exception as e:
-        return JsonResponse({"result": None, "error": f"Erro ao buscar treinos: {str(e)}"}, status=500)
+    return JsonResponse({"result": treinos_list, "error": None})
