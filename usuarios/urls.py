@@ -14,5 +14,5 @@ urlpatterns = [
     path('atualizar_status_treino/', views.atualizar_usuario_treino_view, name='atualizar_status_treino'),
     path('inscrever_usuario_treino/', views.inscrever_usuario_treino_view, name='inscrever_usuario_treino'),
     path('registrar_historico_usuario/', views.criar_historico_usuario_view, name='registrar_historico_usuario'),
-    path('listar_historico_usuario', views.listar_historico_usuario_view, name='listar_historico_usuario')
+    path('listar_historico_usuario/', views.listar_historico_usuario_view, name='listar_historico_usuario')
 ]
