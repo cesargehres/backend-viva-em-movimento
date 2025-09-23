@@ -242,3 +242,127 @@ def exercicios_usuario_treino_view(request, usuario_treino_id):
         })
 
     return JsonResponse({"result": exercicios_list, "error": None})
+
+
+@api_view(['PUT'])
+def atualizar_status_exercicio_view(request):
+    user, error_response = get_user_from_token(request)
+    if error_response:
+        return error_response
+
+    try:
+        data = json.loads(request.body)
+        usuario_exercicio_id = data.get("usuario_exercicio_id")
+        concluido = data.get("concluido")
+
+        if usuario_exercicio_id is None or concluido is None:
+            return JsonResponse(
+                {"result": None, "error": "Campos obrigatórios: usuario_exercicio_id, concluido"},
+                status=400
+            )
+
+        usuario_exercicio = UsuarioExercicio.objects.select_related("usuario_treino__usuario").get(
+            id=usuario_exercicio_id
+        )
+
+        if usuario_exercicio.usuario_treino.usuario != user:
+            return JsonResponse({"result": None, "error": "Acesso negado"}, status=403)
+
+        usuario_exercicio.concluido = concluido
+        usuario_exercicio.save()
+
+        return JsonResponse({
+            "result": {
+                "usuario_exercicio_id": usuario_exercicio.id,
+                "concluido": usuario_exercicio.concluido
+            },
+            "error": None
+        })
+
+    except UsuarioExercicio.DoesNotExist:
+        return JsonResponse({"result": None, "error": "Usuário/Exercício não encontrado"}, status=404)
+    except Exception as e:
+        return JsonResponse({"result": None, "error": str(e)}, status=400)
+
+
+@api_view(['PUT'])
+def atualizar_usuario_treino_view(request):
+    user, error_response = get_user_from_token(request)
+    if error_response:
+        return error_response
+
+    try:
+        data = json.loads(request.body)
+        usuario_treino_id = data.get("usuario_treino_id")
+        treinou = data.get("treinou")  # True ou False
+
+        if usuario_treino_id is None:
+            return JsonResponse({"result": None, "error": "ID do treino é obrigatório"}, status=400)
+
+        usuario_treino = UsuarioTreino.objects.get(id=usuario_treino_id, usuario=user)
+
+        if treinou is not None:
+            usuario_treino.treinou = bool(treinou)
+
+        usuario_treino.save()
+
+        return JsonResponse({
+            "result": {
+                "usuario_treino_id": usuario_treino.id,
+                "treinou": usuario_treino.treinou,
+            },
+            "error": None
+        })
+
+    except UsuarioTreino.DoesNotExist:
+        return JsonResponse({"result": None, "error": "Treino do usuário não encontrado"}, status=404)
+    except json.JSONDecodeError:
+        return JsonResponse({"result": None, "error": "JSON inválido"}, status=400)
+    except Exception as e:
+        return JsonResponse({"result": None, "error": str(e)}, status=500)
+
+
+@api_view(['POST'])
+def inscrever_usuario_treino_view(request):
+    user, error_response = get_user_from_token(request)
+    if error_response:
+        return error_response
+
+    try:
+        data = json.loads(request.body)
+        treino_id = data.get("treino_id")
+        data_treino = data.get("data")
+
+        if treino_id is None:
+            return JsonResponse({"result": None, "error": "ID do treino é obrigatório"}, status=400)
+
+        try:
+            treino = Treino.objects.get(id=treino_id)
+        except Treino.DoesNotExist:
+            return JsonResponse({"result": None, "error": "Treino não encontrado"}, status=404)
+
+        if UsuarioTreino.objects.filter(usuario=user, treino=treino, data=data_treino).exists():
+            return JsonResponse({"result": None, "error": "Usuário já inscrito nesse treino nessa data"}, status=400)
+
+        usuario_treino = UsuarioTreino.objects.create(
+            usuario=user,
+            treino=treino,
+            data=data_treino if data_treino else None,
+            treinou=False
+        )
+
+        return JsonResponse({
+            "result": {
+                "usuario_treino_id": usuario_treino.id,
+                "treino_id": treino.id,
+                "nome_treino": treino.nome_treino,
+                "data": str(usuario_treino.data),
+                "treinou": usuario_treino.treinou
+            },
+            "error": None
+        }, status=201)
+
+    except json.JSONDecodeError:
+        return JsonResponse({"result": None, "error": "JSON inválido"}, status=400)
+    except Exception as e:
+        return JsonResponse({"result": None, "error": str(e)}, status=500)
