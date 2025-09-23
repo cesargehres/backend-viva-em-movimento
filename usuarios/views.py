@@ -1,12 +1,15 @@
 import json
 import uuid
 
+from django.utils.dateparse import parse_date
 from rest_framework.decorators import api_view
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
+from datetime import datetime
+
 
 from utils.get_user_from_token import get_user_from_token
-from .models import Treino, Usuario, UsuarioTreino, UsuarioExercicio
+from .models import Treino, Usuario, UsuarioTreino, UsuarioExercicio, UsuarioHistorico, UsuarioHistoricoCircunferencia
 
 from django.http import JsonResponse
 
@@ -371,5 +374,121 @@ def inscrever_usuario_treino_view(request):
 
     except json.JSONDecodeError:
         return JsonResponse({"result": None, "error": "JSON inválido"}, status=400)
+    except Exception as e:
+        return JsonResponse({"result": None, "error": str(e)}, status=500)
+
+
+from django.http import JsonResponse
+from datetime import datetime
+from django.utils.dateparse import parse_date
+
+@api_view(['POST'])
+def criar_historico_usuario_view(request):
+    user, error_response = get_user_from_token(request)
+    if error_response:
+        return error_response
+
+    data = request.data
+
+    usuario_peso = data.get("usuario_peso")
+    usuario_altura = data.get("usuario_altura")
+    data_historico = data.get("data")
+
+    if usuario_peso is None or usuario_altura is None:
+        return JsonResponse(
+            {"result": None, "error": "Campos obrigatórios: usuario_peso, usuario_altura"},
+            status=400
+        )
+
+    if data_historico:
+        data_parsed = parse_date(data_historico)
+        if data_parsed is None:
+            return JsonResponse({"result": None, "error": "Data inválida"}, status=400)
+    else:
+        data_parsed = datetime.today().date()
+
+    try:
+        historico, created = UsuarioHistorico.objects.get_or_create(
+            usuario=user,
+            data=data_parsed,
+            defaults={
+                'usuario_peso': usuario_peso,
+                'usuario_altura': usuario_altura,
+            }
+        )
+        if not created:
+            # Atualiza os campos se já existe
+            historico.usuario_peso = usuario_peso
+            historico.usuario_altura = usuario_altura
+            historico.save()
+            # Remove circunferências antigas para esse histórico
+            historico.circunferencias.all().delete()
+
+        circunferencias = data.get("circunferencias", [])
+        for c in circunferencias:
+            descricao = c.get("circunferencia_descricao")
+            medida = c.get("circunferencia_medida")
+
+            if descricao is None or medida is None:
+                continue
+
+            UsuarioHistoricoCircunferencia.objects.create(
+                usuario_historico=historico,
+                circunferencia_descricao=descricao,
+                circunferencia_medida=medida
+            )
+
+        return JsonResponse({
+            "result": {
+                "historico_id": historico.id,
+                "usuario_peso": historico.usuario_peso,
+                "usuario_altura": historico.usuario_altura,
+                "data": str(historico.data),
+                "circunferencias": [
+                    {
+                        "circunferencia_descricao": c.circunferencia_descricao,
+                        "circunferencia_medida": c.circunferencia_medida
+                    } for c in historico.circunferencias.all()
+                ]
+            },
+            "error": None
+        }, status=201)
+
+    except Exception as e:
+        return JsonResponse({"result": None, "error": str(e)}, status=500)
+
+
+from django.http import JsonResponse
+
+
+@api_view(['GET'])
+def listar_historico_usuario_view(request):
+    user, error_response = get_user_from_token(request)
+    if error_response:
+        return error_response
+
+    try:
+        historicos = UsuarioHistorico.objects.filter(usuario=user).order_by('-data')
+
+        result = []
+        for h in historicos:
+            circunferencias = [
+                {
+                    "circunferencia_descricao": c.circunferencia_descricao,
+                    "circunferencia_medida": c.circunferencia_medida
+                }
+                for c in h.circunferencias.all()
+            ]
+
+            result.append({
+                "historico_id": h.id,
+                "usuario_peso": h.usuario_peso,
+                "usuario_altura": h.usuario_altura,
+                "data": str(h.data),
+                "circunferencias": circunferencias
+            })
+
+        return JsonResponse({"result": result, "error": None}, status=200)
+
     except Exception as e:
         return JsonResponse({"result": None, "error": str(e)}, status=500)
