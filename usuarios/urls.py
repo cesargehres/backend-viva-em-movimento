@@ -9,8 +9,5 @@ urlpatterns = [
     path('criar/', views.criar_usuario, name='criar_usuario'),
     path('refresh_token/', views.refresh_token_view, name='refresh_token'),
     path('treinos_usuario/', views.treinos_usuario_view, name='treinos_usuario'),
-    path('exercicios_treino_usuario/<int:usuario_treino_id>/', views.exercicios_usuario_treino_view, name="exercicios_treino_usuario"),
-    path('atualizar_status_exercicio/', views.atualizar_status_exercicio_view, name='atualizar_status_exercicio'),
-    path('atualizar_status_treino/', views.atualizar_usuario_treino_view, name='atualizar_status_treino'),
-    path('inscrever_usuario_treino/', views.inscrever_usuario_treino_view, name='inscrever_usuario_treino')
+    path('exercicios_treino_usuario/<int:usuario_treino_id>/', views.exercicios_usuario_treino_view, name="exercicios_treino_usuario")
 ]
