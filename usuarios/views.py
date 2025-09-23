@@ -152,7 +152,8 @@ def treinos_usuario_view(request):
 
     treinos_list = [
         {
-            "id": str(treino.id),
+            "id_treino_usuario": treino.id,
+            "id_treino": treino.treino.id,
             "nome_treino": treino.treino.nome_treino,
             "descricao_treino": treino.treino.descricao_treino,
             "imagem_treino": treino.treino.imagem_treino.url if treino.treino.imagem_treino else None,
@@ -179,7 +180,7 @@ def treinos_usuario_view(request):
 
 
 @api_view(['GET'])
-def exercicios_usuario_treino(request, treino_id):
+def exercicios_usuario_treino_view(request, treino_id):
     user, error_response = get_user_from_token(request)
     if error_response:
         return error_response
@@ -189,10 +190,8 @@ def exercicios_usuario_treino(request, treino_id):
     except Treino.DoesNotExist:
         return JsonResponse({"result": None, "error": "Treino não encontrado"}, status=404)
 
-    # Pega todos os exercícios do treino
     exercicios = treino.exercicios.all()
 
-    # Pega o status de cada exercício para o usuário
     exercicios_list = []
     for exercicio in exercicios:
         try:
@@ -232,7 +231,8 @@ def exercicios_usuario_treino_view(request, usuario_treino_id):
     exercicios_list = []
     for usuario_exercicio in usuario_treino.exercicios.all():
         exercicios_list.append({
-            "id": str(usuario_exercicio.exercicio.id),
+            "id_exercicio_usuario": usuario_exercicio.exercicio.id,
+            "id_exercicio": usuario_exercicio.id,
             "nome_exercicio": usuario_exercicio.exercicio.nome_exercicio,
             "descricao_exercicio": usuario_exercicio.exercicio.descricao_exercicio,
             "series": usuario_exercicio.exercicio.series,
@@ -241,7 +241,14 @@ def exercicios_usuario_treino_view(request, usuario_treino_id):
             "concluido": usuario_exercicio.concluido
         })
 
-    return JsonResponse({"result": exercicios_list, "error": None})
+    response = {
+        "id_treino_usuario": usuario_treino.id,
+        "id_treino": usuario_treino.treino.id,
+        "treino": usuario_treino.treino.nome_treino,
+        "exercicios": exercicios_list
+    }
+
+    return JsonResponse({"result": response, "error": None})
 
 
 @api_view(['PUT'])
