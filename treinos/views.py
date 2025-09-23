@@ -40,10 +40,6 @@ def listar_treinos_view(request):
     })
 
 
-from rest_framework.decorators import api_view
-from django.http import JsonResponse
-from treinos.models import Treino
-
 @api_view(['GET'])
 def listar_treino_exercicios(request, treino_id):
     try:
@@ -74,3 +70,47 @@ def listar_treino_exercicios(request, treino_id):
 
     except Treino.DoesNotExist:
         return JsonResponse({"result": None, "error": "Treino não encontrado"}, status=404)
+
+
+from rest_framework.decorators import api_view
+from django.http import JsonResponse
+from .models import Treino
+
+
+@api_view(['GET'])
+def filtrar_treinos_por_nome(request):
+    nome = request.GET.get("nome", "")
+    page = int(request.GET.get("page", 1))
+    size = int(request.GET.get("size", 20))
+
+    treinos = Treino.objects.filter(nome_treino__icontains=nome).order_by("nome_treino")
+    total = treinos.count()
+    start = (page - 1) * size
+    end = start + size
+    treinos_page = treinos[start:end]
+
+    treinos_list = [
+        {
+            "id_treino": treino.id,
+            "nome_treino": treino.nome_treino,
+            "descricao_treino": treino.descricao_treino,
+            "url_imagem_treino": treino.url_imagem_treino if treino.url_imagem_treino else None,
+        }
+        for treino in treinos_page
+    ]
+
+    total_pages = (total + size - 1) // size
+    next_page = page + 1 if page < total_pages else None
+    previous_page = page - 1 if page > 1 else None
+
+    return JsonResponse({
+        "result": {
+            "total_treinos": total,
+            "current_page": page,
+            "next_page": next_page,
+            "previous_page": previous_page,
+            "treinos": treinos_list
+        },
+        "error": None
+    })
+
