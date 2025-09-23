@@ -159,7 +159,7 @@ def treinos_usuario_view(request):
             "id_treino": treino.treino.id,
             "nome_treino": treino.treino.nome_treino,
             "descricao_treino": treino.treino.descricao_treino,
-            "imagem_treino": treino.treino.imagem_treino.url if treino.treino.imagem_treino else None,
+            "url_imagem_treino": treino.treino.url_imagem_treino if treino.treino.url_imagem_treino else None,
             "data": str(treino.data),
             "treinou": treino.treinou
         }
