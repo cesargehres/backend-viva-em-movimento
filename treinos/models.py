@@ -4,7 +4,7 @@ from exercicios.models import Exercicio
 class Treino(models.Model):
     nome_treino = models.CharField(max_length=150)
     descricao_treino = models.TextField()
-    imagem_treino = models.ImageField(upload_to='treinos/', null=True, blank=True)
+    url_imagem_treino = models.URLField(null=True, blank=True)
     exercicios = models.ManyToManyField(Exercicio, through='TreinoExercicio', related_name='treinos')
 
     def __str__(self):
