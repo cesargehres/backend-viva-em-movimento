@@ -82,7 +82,8 @@ def login_view(request):
                 "usuario": {
                     "id": str(usuario.id),
                     "nome": usuario.nome_usuario,
-                    "email": usuario.email_usuario
+                    "email": usuario.email_usuario,
+                    "data_nascimento": str(usuario.data_nascimento)
                 },
                 "tokens": {
                     "access": str(refresh.access_token),
