@@ -234,8 +234,8 @@ def exercicios_usuario_treino_view(request, usuario_treino_id):
     exercicios_list = []
     for usuario_exercicio in usuario_treino.exercicios.all():
         exercicios_list.append({
-            "id_exercicio_usuario": usuario_exercicio.exercicio.id,
-            "id_exercicio": usuario_exercicio.id,
+            "id_exercicio_usuario": usuario_exercicio.id,
+            "id_exercicio": usuario_exercicio.exercicio.id,
             "nome_exercicio": usuario_exercicio.exercicio.nome_exercicio,
             "descricao_exercicio": usuario_exercicio.exercicio.descricao_exercicio,
             "series": usuario_exercicio.exercicio.series,
